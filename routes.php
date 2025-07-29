@@ -1,18 +1,57 @@
 <?php
-$router->addRoute('GET', '', function() { // GET to /
-    echo "Home page at /";
-});
-$router->addRoute('GET', 'otherpage', function() { // GET to /otherpage
-    echo "Other page at /otherpage";
-});
-$router->addRoute('ANY', '404', function() { // Any request type to /404 or when a route not found
-    echo "Error page not found.";
+require_once 'router.php';
+use MJDawson\Router\Router;
+
+define('BASE_DIR', __DIR__);
+$router = new Router();
+
+/**
+ * Get the current page from the URI
+ *
+ * @return array
+ */
+function getPage() {
+    return array_values(array_filter(
+        explode('/', strtok($_SERVER['REQUEST_URI'], '?')),
+        fn($s) => $s !== ''
+    ));
+}
+
+/**
+ * Load a page from /private/pages/{name}.php
+ *
+ * @param string $name
+ * @return void
+ */
+function loadPage($name) {
+    if (!file_exists(BASE_DIR . '/private/pages/' . $name . '.php')) { // Set the dir to whatever 
+        die('Page not found: ' . $name);
+    }
+
+    $app = ['example' => 'whatever']; // Allows for $app['example'] to return whatever inside the page
+    include BASE_DIR . '/private/pages/' . $name . '.php'; // Set the dir to whatever
+}
+
+// Define routes
+$router->addRoute('GET', '', function() {
+    loadPage('home');
 });
 
-// API routes example
-$router->addRoute('POST', 'api/auth/login', function() { // POST to /api/auth/login
-    echo "Api page for /api/auth/login";
+$router->addRoute('GET', 'about', function() {
+    loadPage('about');
 });
-$router->addRoute('GET', 'api/users', function() { // GET to /api/users
-    echo "This is the users page";
+
+$router->addRoute('POST', 'api/contact', function() {
+    loadPage('api/contact');
 });
+
+$router->addRoute('GET', 'api/users', function() {
+    loadPage('api/users');
+});
+
+$router->addRoute('ANY', '404', function() {
+    echo "404 page not found.";
+});
+
+// Handle the request
+$router->handleRequest(getPage());
